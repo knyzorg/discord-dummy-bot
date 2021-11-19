@@ -2,7 +2,7 @@
 FROM python:3.7-alpine
 
 # Set image informations
-LABEL Name=discord_dummy Version=1.1.0 maintainer="C. Nicolas <contact@pawz.xyz>"
+LABEL Name=discord_dummy Version=1.1.0 maintainer="Slava Knyazev <slava@knyazev.io>"
 
 # Set workdir
 WORKDIR /app

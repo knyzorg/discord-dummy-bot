@@ -1,60 +1,28 @@
-# coding: utf-8
-
-"""
-MIT License
-
-Copyright (c) 2021, Candia Nicolas
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE."""
-
 import discord
 import signal
 import os
+from multiprocessing import Process
+import time
 
-# GLOBALS ---------------------------------------
+DISCORD_TOKENS = list()
 
-# Discord BOT Token
-DISCORD_TOKEN = "BOT_TOKEN"
+if "DISCORD_TOKENS" in os.environ:
+    DISCORD_TOKENS = os.environ['DISCORD_TOKENS'].split(" ")
 
-# Discord admins user id, required for commands
-DISCORD_ADMINS = [215068875648139264]
-
-# UTILS -----------------------------------------
 
 class DummyClient(discord.Client):
 
-    def __init__(self, intents=None):
+    def __init__(self, name, intents=None):
         super().__init__(intents=intents)
+        self.name = name
 
     async def on_message(self, message):
         if message.channel.type == discord.channel.ChannelType.text:
-            if "<@!{0}>".format(self.user.id) or "<@{0}>".format(self.user.id):
-
-                args = message.content.strip().split(' ')
-
+            args = message.content.strip().split(' ')
+            if args[0] in ("<@!{0}>".format(self.user.id), "<@{0}>".format(self.user.id)):
                 if len(args) > 1:
-                    # Command for stopping the bot, can only be used by Discord user with id in DISCORD_ADMINS
-                    if args[1] == "destroy" and message.author.id in DISCORD_ADMINS:
-                        await self.close()
-
                     # Command to force the bot to join your channel
-                    elif args[1] == "join":
+                    if args[1] == "join":
                         channel = None
                         for channel in message.guild.channels:
                             if isinstance(channel, discord.VoiceChannel):
@@ -66,49 +34,61 @@ class DummyClient(discord.Client):
                                                 break
                                         await channel.connect()
                                         break
-
+                    if args[1] == "leave":
+                        for voice_channel in self.voice_clients:
+                            await voice_channel.disconnect(force=True)
+                            break
 
     async def on_ready(self):
-        print("[DUMMYBOT] Discord client loaded")
-
+        print(f"[{self.name}] Discord client loaded")
 
     async def on_connect(self):
-        print("[DUMMYBOT] connected to Discord")
-
+        print(f"[{self.name}] connected to Discord")
 
     async def on_disconnected(self):
-        print("[DUMMYBOT] disconnected from Discord")
-
+        print(f"[{self.name}] disconnected from Discord")
 
     def stop(self):
         exit()
 
 
-# MAIN ------------------------------------------
-
-if __name__ == "__main__":
-    print("[DUMMYBOT] Discord started")
-
-    # Bot configs
-    if "DISCORD_TOKEN" in os.environ:
-        DISCORD_TOKEN = os.environ['DISCORD_TOKEN']
-    if "DISCORD_ADMINS" in os.environ:
-        DISCORD_ADMINS = [int(s) for s in os.environ['DISCORD_ADMINS'].split(',')]
-
-    # Discord bot intents
+def connect(token, number):
     intents = discord.Intents.default()
     intents.members = True
-
-    # Run discord bot client
-    client = DummyClient(intents=intents)
-
+    client = DummyClient(f"DUMMYBOT #{number}", intents=intents)
     # Set-up stop/exit signal
     signal.signal(signal.SIGTERM, client.stop)
     signal.signal(signal.SIGINT, client.stop)
 
-    client.run(DISCORD_TOKEN)
+    reconnectDelay = 10
+    while True:
+        try:
+            client.run(token)
+        except Exception as e:
+            print(
+                f"[DUMMYBOT #{number}] Failed to connect due to {type(e).__name__} exception")
+            print(f"Waiting {reconnectDelay} seconds and reconnecting...")
+            time.sleep(reconnectDelay)
+            reconnectDelay = reconnectDelay * 2
+
+
+# MAIN ------------------------------------------
+if __name__ == "__main__":
+    print("[DUMMYBOT] Discord started")
+
+    signal.signal(signal.SIGTERM, exit)
+    signal.signal(signal.SIGINT, exit)
+
+    processes = list()
+    counter = 1
+    for t in DISCORD_TOKENS:
+        # Discord bot intents
+        p = Process(target=connect, args=(t, counter))
+        processes.append(p)
+        p.start()
+        counter = counter + 1
+
+    for p in processes:
+        p.join()
 
     print("[DUMMYBOT] terminated")
-
-
-# End of file dummy.py

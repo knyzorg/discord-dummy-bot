@@ -1,42 +1,81 @@
-# Dummy BOT
+# Discord Dummy Bot
 
-DummyBOT is a Discord Bot that perform the most important task on your Discord server, doing nothing.
-It will always do nothing, whatever you do !
+Discord Dummy Bot is a Discord Bot that performs simple tasks, similar to those normal users would on-demand such as:
 
-~~If you want to add this bot to your server, go to official website.~~
+- Joining voice channels
+- Leaving voice channels
+- Sending messages (coming soon)
 
-**Update 11-13-2021: Official bot is stopped and there is no actual plan to re-launch it. You can always run your own version of the bot by yourself.**
+## Adding to your Server
 
-**Next part is only for people who want to launch their own version of DummyBOT**
+I am hosting three dummy bots myself to avoid dealing with the need to save you the hassle of self-hosting.
 
+[dummy-bot-1](https://discord.com/oauth2/authorize?client_id=911029359534563339&permissions=8&scope=bot%20applications.commands)
+[dummy-bot-2](https://discord.com/oauth2/authorize?client_id=911068573370290216&permissions=8&scope=bot%20applications.commands)
+[dummy-bot-3](https://discord.com/oauth2/authorize?client_id=911069030566203412&permissions=8&scope=bot%20applications.commands)
+
+> **Why Admin permissions?**
+> Admin permissions allow the bot to view all channels. If this is not desired, the bot will function perfectly fine without admin permissions.
+
+## Self-Hosting
 
 ### Requirements
 
-* Python 3.7
-* discord.py - 1.7.3 / [github](https://github.com/Rapptz/discord.py)
-* PyNaCl - 1.4.0
+- Python 3.7
+- discord.py - 1.7.3 / [github](https://github.com/Rapptz/discord.py)
+- PyNaCl - 1.4.0
 
+### Setup
 
-### Usage
+First, create a bot (or two) on the [Discord developer site](https://discord.com/developers/applications/) and get its token.
 
-* Edit `dummy.py` and write your Discord bot token as value of `DISCORD_TOKEN`
+![Get Token](./token.png)
 
-* (Optional) Add your discord user id to `DISCORD_ADMINS`
+Second, install the dependencies:
 
-* Launch `dummy.py` using python `python3 ./dummy.py`
+```bash
+pip3 install -r requirements.txt
+```
 
-* Use command `@<bot_name> destroy` to stop the bot 
+Lastly, run the bot with as many tokens as you have:
 
-* Use command `@<bot_name> join` to make the bot join you in a vocal channel 
+```bash
+DISCORD_TOKENS="token1 token2 token3" python3 ./dummy.py
+```
 
+**Tip**: You can add the bot to your Discord server by going to this URL (replace `APP_ID` with your Application ID): `https://discord.com/oauth2/authorize?client_id=APP_ID&permissions=8&scope=bot%20applications.commands`
 
-You can also run the bot inside a Docker container :
+#### Docker
 
-* Build docker image : `docker build -t dummybot_discord:latest .`
+Alternatively, you can run the bot inside a Docker container:
 
-* Then create and start a container : `docker create -e "DISCORD_TOKEN=<token>" -e "DISCORD_ADMINS=<id_admin>,<another_admin>" --name="dummybot" dummybot_discord:latest` and `docker start dummybot`
+```bash
+docker build -t dummybot_discord:latest
+docker create -e "DISCORD_TOKENS=\"<tokens>\"" --name="dummybot" dummybot_discord:latest
+docker start dummybot
+```
 
+## Commands
 
-### License
+All commands need to begin by tagging the bot you wish to invoke:
 
-MIT License
+- Use command `@<bot_name> join` to make the bot join you in a voice channel
+- Use command `@<bot_name> leave` to make the bot leave their voice channel
+
+## Credits
+
+This project is a fork of [C. Nicolas's project](https://github.com/Eryux/dummybot-discord), with changes sublicensed under the GPL.
+
+Notable changes include:
+
+- Support for multiple bots through multi-threading
+- Removed support for restricting who can use the bot
+- Switched to using environment variables instead of hard-coded tokens
+
+## License
+
+GNU General Public License + MIT License
+
+See [`LICENSE`](./LICENSE) for details.
+
+The `LICENSE` file must be included in all reproductions of this software.
