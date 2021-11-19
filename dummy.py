@@ -49,6 +49,7 @@ class DummyClient(discord.Client):
         print(f"[{self.name}] disconnected from Discord")
 
     def stop(self):
+        self.close()
         exit()
 
 
@@ -56,14 +57,13 @@ def connect(token, number):
     intents = discord.Intents.default()
     intents.members = True
     client = DummyClient(f"DUMMYBOT #{number}", intents=intents)
-    # Set-up stop/exit signal
-    signal.signal(signal.SIGTERM, client.stop)
-    signal.signal(signal.SIGINT, client.stop)
-
     reconnectDelay = 10
     while True:
         try:
             client.run(token)
+        except RuntimeError:
+            print(f"[DUMMYBOT #{number}] Shutting down...")
+            break
         except Exception as e:
             print(
                 f"[DUMMYBOT #{number}] Failed to connect due to {type(e).__name__} exception")
@@ -76,19 +76,21 @@ def connect(token, number):
 if __name__ == "__main__":
     print("[DUMMYBOT] Discord started")
 
-    signal.signal(signal.SIGTERM, exit)
-    signal.signal(signal.SIGINT, exit)
-
     processes = list()
-    counter = 1
+    counter = 0
     for t in DISCORD_TOKENS:
+        counter = counter + 1
         # Discord bot intents
         p = Process(target=connect, args=(t, counter))
         processes.append(p)
         p.start()
-        counter = counter + 1
 
-    for p in processes:
-        p.join()
+    print(f"[DUMMYBOT] Created {counter} bots")
+
+    try:
+        for p in processes:
+            p.join()
+    except KeyboardInterrupt:
+        print("[DUMMYBOT] Shutting down")
 
     print("[DUMMYBOT] terminated")
